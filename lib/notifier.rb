@@ -19,6 +19,8 @@ class Notifier
   def run
     payloads = message_payloads(pages_per_channel)
 
+    return if payloads.empty?
+
     puts "== JSON Payload:"
     puts JSON.pretty_generate(payloads)
 
@@ -33,15 +35,35 @@ class Notifier
     end
 
     payloads.each do |message_payload|
-      HTTP.post(@slack_url, body: JSON.dump(message_payload))
+      if ENV.has_key? "SLACK_TOKEN"
+        response = HTTP
+          .auth("Bearer #{ENV['SLACK_TOKEN']}")
+          .post("https://slack.com/api/chat.postMessage", json: message_payload)
+          .parse
+
+        if !response["ok"] then
+          if response["error"] == "invalid_auth" then
+            raise "Unable to post to Slack: SLACK_TOKEN is not valid"
+          else
+            puts "Unable to post to Slack: #{response['error']}"
+          end
+        end
+      else
+        HTTP.post(@slack_url, body: JSON.dump(message_payload))
+      end
     end
   end
 
   def pages
-    JSON.parse(HTTP.get(@pages_url)).map { |data|
+    beginJSON.parse(HTTP.get(@pages_url)).map { |data|
       data['url'] = get_absolute_url(data['url'])
       Page.new(data)
     }
+    rescue => exception
+      warn "Notifier: could not get pages for tech docs at #{@pages_url}"
+      warn exception.message
+      return []
+    end
   end
 
   def pages_per_channel
