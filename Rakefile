@@ -65,7 +65,11 @@ namespace "lambda" do
       files_to_copy = %w[Gemfile Gemfile.lock .ruby-version]
       files_to_copy.each { | f | FileUtils.copy(File.join(__dir__, f), "lib/#{f}") }
       Dir.chdir('lib') do
-        sh "SAM_CLI_TELEMETRY=0 sam build --use-container -t ../resources/aws-sam-cli/template.yaml --debug"
+        sh "SAM_CLI_TELEMETRY=0 sam build -t ../resources/aws-sam-cli/template.yaml --debug" do |ok, res|
+          if !ok
+            puts "Error occurred: = #{res}"
+          end
+        end
       end
     ensure
       files_to_copy.each { | f | FileUtils.rm"lib/#{f}" }
