@@ -1,9 +1,7 @@
 require_relative './lib/notifier'
 require 'chronic'
 require 'fileutils'
-require 'open3'
 require 'yaml'
-require 'rake/packagetask'
 
 task default: ["notify:expired"]
 
@@ -57,35 +55,13 @@ end
 namespace "lambda" do
   desc "Builds an AWS Lambda Distribution"
   task :build do
-    begin
-
-
-      # AWS SAM CLI mounts the 'lib' folder, which it views as the Lambda's root directory,
-      # as a Volume inside the Docker container which builds the Lambda function.
-      # In order to install all the necessary dependencies it requires certain files
-      # to be copied in to this directory.
-      # In order not to pollute the repository we copy them, run the build and
-      # then delete the copies afterwards.
-      #files_to_copy = %w[Gemfile Gemfile.lock .ruby-version]
-      #files_to_copy.each { | f | FileUtils.copy(File.join(__dir__, f), "lib/#{f}") }
-
-      FileUtils.mkdir_p 'build/dist'
-      sh "rm -fr build/dist/function.zip"
-      sh "bundle config set --local path 'vendor/bundle'"
-      sh "bundle install"
-      sh "zip -r build/dist/function.zip . --include vendor/\\*"
-      Dir.chdir('lib') do
-        sh "zip -r ../build/dist/function.zip . --include \\*.rb"
-      end
-
-    #ensure
-    #  files_to_copy.each { | f | FileUtils.rm"lib/#{f}" }
-    #end
+    Dir.chdir('lib') do
+      sh "SAM_CLI_TELEMETRY=0 sam build --use-container -t ../template.yaml -m lib/Gemfile --debug"
     end
   end
 
   desc "Runs the Lambda function locally"
-  task :local, [:event_file, :aws_region] do | _, args |
+  task :local, [:event_file, :aws_region] => [:build] do | _, args |
     args.with_defaults(:aws_region => "eu-west-2")
 
     if args[:event_file].nil?
@@ -93,12 +69,7 @@ namespace "lambda" do
     end
 
     event_file_absolute_path = File.join __dir__, args[:event_file]
-    begin
-      Dir.chdir('lib') do
-        sh "SAM_CLI_TELEMETRY=0 sam local invoke --event #{event_file_absolute_path} --region=#{args[:aws_region]} --template ../resources/aws-sam-cli/template.yaml"
-      end
-    ensure
-    end
+    sh "SAM_CLI_TELEMETRY=0 sam local invoke --event #{event_file_absolute_path} --region=#{args[:aws_region]}"
   end
 
   desc "Publish the Lambda artefact to an S3 Bucket."
@@ -111,14 +82,12 @@ namespace "lambda" do
 
     output_file_name = "tech-docs-monitor-template.yaml"
     output_file_absolute_path = File.join build_directory_absolute_path, output_file_name
-    Dir.chdir('lib') do
-      sh %{
-        SAM_CLI_TELEMETRY=0 sam package --region #{args[:aws_region]} \\
-          --s3-bucket '#{args[:s3_bucket]}' \\
-          --s3-prefix '#{args[:s3_prefix]}' \\
-          --output-template-file='#{output_file_absolute_path}'
-      }
-    end
+    sh %{
+      SAM_CLI_TELEMETRY=0 sam package --region #{args[:aws_region]} \\
+        --s3-bucket '#{args[:s3_bucket]}' \\
+        --s3-prefix '#{args[:s3_prefix]}' \\
+        --output-template-file='#{output_file_absolute_path}'
+    }
     aws_sam_s3_file_name = YAML.load_file(output_file_absolute_path)["Resources"]["TechDocsNotifier"]["Properties"]["Code"]["S3Key"].split('/')[-1]
     puts "SAM CLI has published the Lambda artefact as #{aws_sam_s3_file_name}"
 
@@ -128,7 +97,7 @@ namespace "lambda" do
     lambda_artefact_object_key = "s3://#{args[:s3_bucket]}/#{args[:s3_prefix]}/#{versioned_lambda_file_name}"
     sh %{
       aws s3 cp s3://#{args[:s3_bucket]}/#{args[:s3_prefix]}/#{aws_sam_s3_file_name} \\
-        #{lambda_artefact_object_key} \\
+       #{lambda_artefact_object_key} \\
         --acl=bucket-owner-full-control
     }
     puts "Renamed Lambda artefact to: #{lambda_artefact_object_key}"

@@ -4,7 +4,8 @@ Resources:
   TechDocsNotifier:
     Type: AWS::Lambda::Function
     Properties:
-      Code: ../../lib
+      PackageType: Zip
+      CodeUri: lib/
       FunctionName: run
       Handler: notification/handler.main
       Environment:
