@@ -1,7 +1,9 @@
 require_relative './lib/notifier'
 require 'chronic'
 require 'fileutils'
+require 'open3'
 require 'yaml'
+require 'rake/packagetask'
 
 task default: ["notify:expired"]
 
@@ -56,23 +58,29 @@ namespace "lambda" do
   desc "Builds an AWS Lambda Distribution"
   task :build do
     begin
+
+
       # AWS SAM CLI mounts the 'lib' folder, which it views as the Lambda's root directory,
       # as a Volume inside the Docker container which builds the Lambda function.
       # In order to install all the necessary dependencies it requires certain files
       # to be copied in to this directory.
       # In order not to pollute the repository we copy them, run the build and
       # then delete the copies afterwards.
-      files_to_copy = %w[Gemfile Gemfile.lock .ruby-version]
-      files_to_copy.each { | f | FileUtils.copy(File.join(__dir__, f), "lib/#{f}") }
+      #files_to_copy = %w[Gemfile Gemfile.lock .ruby-version]
+      #files_to_copy.each { | f | FileUtils.copy(File.join(__dir__, f), "lib/#{f}") }
+
+      FileUtils.mkdir_p 'build/dist'
+      sh "rm -fr build/dist/function.zip"
+      sh "bundle config set --local path 'vendor/bundle'"
+      sh "bundle install"
+      sh "zip -r build/dist/function.zip . --include vendor/\\*"
       Dir.chdir('lib') do
-        sh "SAM_CLI_TELEMETRY=0 sam build -t ../resources/aws-sam-cli/template.yaml --debug" do |ok, res|
-          if !ok
-            puts "Error occurred: = #{res}"
-          end
-        end
+        sh "zip -r ../build/dist/function.zip . --include \\*.rb"
       end
-    ensure
-      files_to_copy.each { | f | FileUtils.rm"lib/#{f}" }
+
+    #ensure
+    #  files_to_copy.each { | f | FileUtils.rm"lib/#{f}" }
+    #end
     end
   end
 
@@ -87,7 +95,7 @@ namespace "lambda" do
     event_file_absolute_path = File.join __dir__, args[:event_file]
     begin
       Dir.chdir('lib') do
-        sh "SAM_CLI_TELEMETRY=0 sam local invoke --event #{event_file_absolute_path} --region=#{args[:aws_region]}"
+        sh "SAM_CLI_TELEMETRY=0 sam local invoke --event #{event_file_absolute_path} --region=#{args[:aws_region]} --template ../resources/aws-sam-cli/template.yaml"
       end
     ensure
     end
