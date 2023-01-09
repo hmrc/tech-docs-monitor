@@ -83,6 +83,8 @@ Create an JSON file containing the event you would like to pass to the Lambda e.
 }
 ```
 
+TRG-636: Test
+
 Invoke the `lambda:local` Rake task, passing the path to the event-file as a task parameter e.g.
 
 ```shell
