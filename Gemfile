@@ -1,6 +1,6 @@
 source 'https://lab03.artefacts.tax.service.gov.uk/artifactory/rubygems-org-remote/'
 
-ruby '~> 3.2.0'
+ruby '~> 3.2.2'
 
 gem 'activesupport'
 gem 'chronic'
