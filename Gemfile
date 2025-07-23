@@ -1,4 +1,4 @@
-source 'https://rubygems.org'
+source 'https://lab03.artefacts.tax.service.gov.uk/artifactory/rubygems-org-remote/'
 
 ruby '~> 3.2.0'
 
