@@ -1,5 +1,5 @@
 GEM
-  remote: https://lab03.artefacts.tax.service.gov.uk/artifactory/rubygems-org-remote/
+  remote: https://lab03.artefacts.tax.service.gov.uk/artifactory/api/gems/rubygems-org-remote/
   specs:
     activesupport (6.0.6.1)
       concurrent-ruby (~> 1.0, >= 1.0.2)
