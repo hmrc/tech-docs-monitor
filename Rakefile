@@ -63,7 +63,31 @@ namespace "lambda" do
       # In order not to pollute the repository we copy them, run the build and
       # then delete the copies afterwards.
       files_to_copy = %w[Gemfile Gemfile.lock .ruby-version]
-      files_to_copy.each { | f | FileUtils.copy(File.join(__dir__, f), "lib/#{f}") }
+      
+      # Copy files and modify source
+      files_to_copy.each do |f|
+        source_path = File.join(__dir__, f)
+        target_path = "lib/#{f}"
+  
+        FileUtils.copy(source_path, target_path)
+  
+        if f == "Gemfile"
+          content = File.read(target_path)
+          updated_content = content.gsub(
+            "source 'https://artefacts.tax.service.gov.uk/artifactory/api/gems/gems/'",
+            "source 'https://rubygems.org'"
+          )
+          File.write(target_path, updated_content)
+        elsif f == "Gemfile.lock"
+          content = File.read(target_path)
+          updated_content = content.gsub(
+            "remote: https://artefacts.tax.service.gov.uk/artifactory/api/gems/gems/",
+            "remote: https://rubygems.org/"
+          )
+          File.write(target_path, updated_content)
+        end
+      end
+      
       Dir.chdir('lib') do
         sh "SAM_CLI_TELEMETRY=0 sam build --use-container -t ../resources/aws-sam-cli/template.yaml --debug"
       end
