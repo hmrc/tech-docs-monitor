@@ -217,6 +217,7 @@ RSpec.describe Notifier, vcr: "fresh" do
     end
 
     it "posts to Slack" do
+      stub_request(:post, @slack_webhook)
       notifier = Notifier.new(AllPages.new, @pages_url, @slack_webhook, true)
       notifier.run
       expect(a_request(:post, @slack_webhook)).to have_been_made.times(2)

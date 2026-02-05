@@ -9,6 +9,8 @@ GEM
       zeitwerk (~> 2.2, >= 2.2.2)
     addressable (2.8.0)
       public_suffix (>= 2.0.2, < 5.0)
+    base64 (0.3.0)
+    bigdecimal (3.3.1)
     chronic (0.10.2)
     concurrent-ruby (1.1.6)
     crack (0.4.3)
@@ -95,6 +97,8 @@ PLATFORMS
 
 DEPENDENCIES
   activesupport
+  base64
+  bigdecimal
   chronic
   http
   octokit
@@ -106,7 +110,7 @@ DEPENDENCIES
   webmock
 
 RUBY VERSION
-   ruby 3.2.2p53
+   ruby 3.4.8p72
 
 BUNDLED WITH
    2.4.2

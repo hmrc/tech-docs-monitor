@@ -1,6 +1,6 @@
 source 'https://artefacts.tax.service.gov.uk/artifactory/api/gems/gems/'
 
-ruby '~> 3.2.0'
+ruby '~> 3.4.8'
 
 gem 'activesupport'
 gem 'chronic'
@@ -14,4 +14,6 @@ group :test do
   gem 'vcr'
   gem 'webmock'
   gem 'rexml'
+  gem 'base64'
+  gem 'bigdecimal'
 end
