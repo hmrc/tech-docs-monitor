@@ -3,8 +3,19 @@ require 'chronic'
 require_relative './expired'
 require_relative './will_expire_by'
 require_relative '../notifier'
+require 'aws-sdk-secretsmanager'
 
-SLACK_URL = ENV.fetch("SLACK_WEBHOOK_URL")
+def get_slack_url
+  if ENV.has_key?("SLACK_WEBHOOK_URL_SECRET_ID")
+    client = Aws::SecretsManager::Client.new
+    resp = client.get_secret_value(secret_id: ENV.fetch("SLACK_WEBHOOK_URL_SECRET_ID"))
+    resp.secret_string
+  else
+    ENV.fetch("SLACK_WEBHOOK_URL")
+  end
+end
+
+SLACK_URL = get_slack_url
 LIVE = ENV.fetch("REALLY_POST_TO_SLACK", 0) == "1"
 
 def main(event:, context:)

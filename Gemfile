@@ -7,6 +7,7 @@ gem 'chronic'
 gem 'http'
 gem 'octokit'
 gem 'rake'
+gem 'aws-sdk-secretsmanager'
 
 group :test do
   gem 'rspec'
